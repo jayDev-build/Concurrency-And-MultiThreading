@@ -124,3 +124,70 @@ public class WaitNotifyExample {
 }
 
 ```
+
+Not exactly! This is a very common misconception, but understanding the difference is crucial to understanding how Java talks to your computer.
+
+When you type `new Thread()`, **you have not actually created a real thread yet.**
+
+Here is the exact breakdown of what happens at each step:
+
+### 1. `new Thread()`: Building the Object
+
+When you use the `new` keyword, all you are doing is creating a standard, lifeless Java object on the Heap. It is no different than saying `new String()` or `new Scanner()`.
+
+* At this point, your operating system has absolutely no idea that you want to run things concurrently.
+* The Java object is simply holding data (like the thread's name, priority, and a reference to the `run()` method).
+* In Java terminology, this thread is in the **NEW** state.
+
+### 2. `thread.start()`: Spawning the Real Thread
+
+This is where the magic happens. When you call `start()`, you are pulling the trigger.
+
+* The JVM (Java Virtual Machine) makes a system call to your actual Operating System (Windows, Mac, Linux).
+* The OS creates a **brand new, real, native operating system thread**.
+* The OS assigns that new native thread its own private memory space (the Stack).
+* Finally, the OS tells that new thread to look inside your Java object and execute the `run()` method.
+
+> **The "Job Listing" Analogy**
+> * **`new Thread()`** is like writing a job description, buying a uniform, and setting up a desk. You have everything prepared, but *there is no actual worker yet*.
+> * **`thread.start()`** is the moment you actually hire a human being. They walk into the office, put on the uniform, sit at the desk, and start doing the work (the `run()` method).
+>
+>
+
+So, `start()` doesn't just mean "run the thread you already created." It means **"ask the computer to create the real thread, and then run it."**
+
+**You have the exact right idea!** When you call `run()` directly instead of `start()`, you are completely skipping the "hire a new worker" step.
+
+However, I just want to gently correct one small technical detail in your phrasing: **The `main` thread itself does not live in the Heap.**
+
+Here is how the pieces actually fit together when you call `t2.run()`:
+
+### The Setup
+
+* **The `t2` Object:** The Java object you created (`new MyThread()`) lives on the **Heap**. It contains the "description" or instructions (the `run()` method).
+* **The `main` Thread:** This is the active worker (created by the OS when you started your Java program). It has its own private **Stack** where it executes code line by line.
+
+### What happens when you hit `t2.run()`
+
+Because you didn't call `start()`, you never asked the OS to create a new background worker.
+
+Instead, the `main` thread (the worker already doing the job) simply looks at the `t2` object on the Heap, reads the instructions inside the `run()` method, and executes them directly on its own Stack.
+
+To the JVM, calling `t2.run()` is no different than calling `System.out.println()` or `Math.max()`. It is just a standard method call. The `main` thread has to finish executing every single line of that `run()` method before it can move on to the next line of code in your program.
+
+### Summary
+
+* **`t2.start()`:** Main thread asks the OS for a new worker. The new worker executes `run()`. Main thread keeps moving.
+* **`t2.run()`:** Main thread does the work itself. It pauses its normal flow, executes the `run()` instructions, and then continues.
+
+
+How Threads Handle I/O Operations (Like User Input)
+When a thread asks for I/O (like reading a file or waiting for Scanner.nextLine()), it does not constantly check for the data or waste CPU power.
+
+Kicked off the CPU: The OS realizes the thread cannot do any more math/logic. It immediately forces a context switch, giving the CPU to another thread.
+
+The Wait Queue (0% CPU): The OS places the thread into a BLOCKED (or WAITING) state and parks it in a specific Wait Queue. During normal context switching, the OS completely ignores this thread. It consumes zero CPU cycles.
+
+Hardware Interrupt: When the user finally types and hits Enter, the keyboard sends a physical electrical signal (Hardware Interrupt) to the CPU.
+
+Waking Up: The OS sees the signal, grabs the data, wakes the thread up from the Wait Queue, and puts it back in the Ready Queue so it can resume executing on the CPU.
