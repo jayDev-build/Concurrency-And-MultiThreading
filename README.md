@@ -191,3 +191,37 @@ The Wait Queue (0% CPU): The OS places the thread into a BLOCKED (or WAITING) st
 Hardware Interrupt: When the user finally types and hits Enter, the keyboard sends a physical electrical signal (Hardware Interrupt) to the CPU.
 
 Waking Up: The OS sees the signal, grabs the data, wakes the thread up from the Wait Queue, and puts it back in the Ready Queue so it can resume executing on the CPU.
+
+This is a very logical assumption to make, but the answer is **no**. Idle threads in a thread pool do not undergo context switching because they are **not** actually in the `RUNNABLE` state!
+
+If idle threads stayed in the `RUNNABLE` state, they would constantly spin in a loop asking, *"Is there a task? Is there a task?"* This is called "busy waiting," and it would waste massive amounts of CPU power and force constant context switching.
+
+Here is how a Thread Pool actually prevents this from happening:
+
+### The Secret Weapon: The BlockingQueue
+
+Inside every `ExecutorService` (like a FixedThreadPool), there is a special data structure called a **BlockingQueue**. This queue holds all the tasks you submit.
+
+Here is the exact lifecycle of a worker thread in the pool:
+
+1. **Finishing a Task:** The thread finishes running a task and goes to the BlockingQueue to ask for the next one.
+2. **The Queue is Empty:** If there are no tasks available, the thread calls a method on the queue (usually `take()`).
+3. **Going to Sleep:** Because it is a *blocking* queue, the `take()` method immediately asks the Operating System to put the thread into a **WAITING** (or `TIMED_WAITING`) state.
+
+### Zero Context Switching
+
+Just like when a thread waits for user input (I/O), an idle thread in a thread pool is taken completely off the CPU.
+
+* It is placed in a Wait Queue by the OS.
+* The OS scheduler completely ignores it.
+* It consumes **0% CPU** and undergoes **zero context switches**.
+
+### Waking Back Up
+
+When you finally call `executor.submit(newTask)`, the ExecutorService places the task into the BlockingQueue. The queue then sends a signal (similar to `notify()`) to the OS: *"Hey, I have work now!"*
+
+The OS takes one of the sleeping worker threads, wakes it up, puts it back into the `RUNNABLE` state, and hands it the task.
+
+> **The Taxi Stand Analogy**
+> Think of worker threads like taxi drivers, and the `BlockingQueue` like a taxi stand.
+> If there are no passengers (tasks), the drivers do not drive around the block in circles wasting gas (busy waiting/context switching). Instead, they park their cars, turn off the engines, and take a nap (WAITING state). When a passenger finally walks up, the dispatcher knocks on one window to wake that specific driver up!
