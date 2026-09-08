@@ -181,7 +181,7 @@ To the JVM, calling `t2.run()` is no different than calling `System.out.println(
 * **`t2.run()`:** Main thread does the work itself. It pauses its normal flow, executes the `run()` instructions, and then continues.
 
 
-How Threads Handle I/O Operations (Like User Input)
+### How Threads Handle I/O Operations (Like User Input)
 When a thread asks for I/O (like reading a file or waiting for Scanner.nextLine()), it does not constantly check for the data or waste CPU power.
 
 Kicked off the CPU: The OS realizes the thread cannot do any more math/logic. It immediately forces a context switch, giving the CPU to another thread.
