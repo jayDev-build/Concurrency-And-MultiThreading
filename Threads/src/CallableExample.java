@@ -1,32 +1,28 @@
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.concurrent.*;
+public class CallableExample {
+    static class MyCallable implements Callable<String>{
 
-class MyCallable implements Callable<String>{
+        private final String name;
 
-    private final String name;
-
-    MyCallable(String name) {
-        this.name = name;
-    }
-
-    @Override
-    public String call(){
-        StringBuilder sb = new StringBuilder();
-        try {
-            for(int i = 0; i < 5; i++){
-                sb.append("Callable ").append(name).append(" is running ").append(i).append(" \n");
-                Thread.sleep(500);
-            }
-        }catch (Exception e){
-            System.out.println("Got error: " + e.getMessage());
+        MyCallable(String name) {
+            this.name = name;
         }
 
-        return sb.toString();
-    }
-}
+        @Override
+        public String call(){
+            StringBuilder sb = new StringBuilder();
+            try {
+                for(int i = 0; i < 5; i++){
+                    sb.append("Callable ").append(name).append(" is running ").append(i).append(" \n");
+                    Thread.sleep(500);
+                }
+            }catch (Exception e){
+                System.out.println("Got error: " + e.getMessage());
+            }
 
-public class CallableExample {
+            return sb.toString();
+        }
+    }
 
     public static void main(String[] args) {
         ExecutorService executors = Executors.newFixedThreadPool(2);
