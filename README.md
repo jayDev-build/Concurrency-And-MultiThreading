@@ -191,3 +191,47 @@ The Wait Queue (0% CPU): The OS places the thread into a BLOCKED (or WAITING) st
 Hardware Interrupt: When the user finally types and hits Enter, the keyboard sends a physical electrical signal (Hardware Interrupt) to the CPU.
 
 Waking Up: The OS sees the signal, grabs the data, wakes the thread up from the Wait Queue, and puts it back in the Ready Queue so it can resume executing on the CPU.
+
+
+### Thread Lifecycle
+1. NEW: The thread object is created on the Heap (new Thread()), but start() has not been called yet. The OS knows nothing about it.
+
+2. RUNNABLE: You called start(). The thread is now ready to run. (Note: Java combines the "Ready to run" and "Actively running on the CPU" states into this single RUNNABLE state).
+
+3. BLOCKED: The thread tried to enter a synchronized block/method, but another thread already holds the lock. It waits at the door until the lock is released.
+
+4. WAITING: The thread is waiting indefinitely for another thread to perform a specific action. This happens when you call wait() or join() without a timeout limit.
+
+5. TIMED_WAITING: Similar to WAITING, but with a built-in timer. This happens when you call Thread.sleep(1000) or wait(1000). Once the timer expires, it goes back to RUNNABLE.
+
+6. TERMINATED: The run() method has completely finished executing. The thread is dead and cannot be restarted.
+
+![Thread LifeCycle](https://cwa-prod.s3.ap-south-1.amazonaws.com/1744454857662-Frame-267-(1).png)
+
+### The ThreadPool (`ExecutorService`) Lifecycle
+
+A Thread Pool changes the rules of the standard thread lifecycle. Instead of a thread dying (`TERMINATED`) immediately after finishing one task, the pool keeps the thread alive to be reused for future tasks, saving the massive CPU overhead of constantly creating and destroying threads.
+
+Here is how the lifecycle works inside a Thread Pool:
+
+1. **Submission:** The `main` thread (Task Submitter) calls `executor.submit(task)`. The `ExecutorService` places this task into an internal **Blocking Queue** (Task Queue).
+2. **Execution:** An idle worker thread in the pool grabs the task from the queue and executes its `run()` method. During this time, the thread is in the `RUNNABLE` state.
+3. **The Idle Phase (Zero Context Switching):** When the worker finishes the task, it does *not* terminate. Instead, it goes back to the empty Blocking Queue and calls `take()`.
+   * Because the queue is blocking, the OS immediately puts the worker thread into a `WAITING` state.
+   * It consumes **0% CPU** and is ignored by the OS context scheduler until a new task arrives in the queue.
+4. **Destruction:** The worker threads only reach the `TERMINATED` state when you explicitly call `executor.shutdown()`, or if the pool is a `CachedThreadPool` and the thread has been idle for too long (usually 60 seconds).
+
+### 11. Waiting for Thread Pools to Finish: `awaitTermination()`
+
+The `executor.awaitTermination(10, TimeUnit.SECONDS)` method pauses the current thread (usually the `main` thread) to wait for an `ExecutorService` to finish all its running tasks after a shutdown request.
+
+**How It Works**
+* **Blocking Behavior:** The thread that calls this line immediately stops and waits.
+* **The Time Limit:** It waits for a maximum of the specified time (e.g., 10 seconds). If all background tasks finish *before* the 10 seconds pass, the method unblocks and returns right away.
+* **Return Value:** It returns a `boolean` indicating success or failure:
+   * `true`: All tasks finished successfully within the time limit.
+   * `false`: The time limit ran out before the tasks could finish.
+
+**Important Rules**
+* **You MUST shutdown first:** You must call `executor.shutdown()` *before* calling `awaitTermination()`. If you do not shut down the executor first, the pool remains open to new tasks, and this method will simply wait until the timer runs out.
+* **Early Exit on Timeout:** If the time limit is reached and background tasks are still running, the method stops waiting and the `main` thread moves on to the next line of code. (Note: It does *not* automatically kill the running tasks when it gives up).
