@@ -69,7 +69,7 @@ When a thread is inside a synchronized method and calls `wait()`, it does two th
 Calling `notify()` does **not** instantly restart the waiting thread, nor does it force it to jump to the end of the method.
 
 1. **Wake Up:** `notify()` tells the waiting thread to wake up.
-2. **Wait for the Key:** The notifying thread *still holds the lock* until it finishes its own synchronized method. The newly woken thread enters a `BLOCKED` state by the door, waiting for the lock to become available.
+2. **Learning.Wait for the Key:** The notifying thread *still holds the lock* until it finishes its own synchronized method. The newly woken thread enters a `BLOCKED` state by the door, waiting for the lock to become available.
 3. **Resume:** Once the notifying thread finishes and drops the lock, the woken thread grabs the key and resumes execution on the exact line of code directly below `wait()`.
 
 ---
@@ -186,11 +186,11 @@ When a thread asks for I/O (like reading a file or waiting for Scanner.nextLine(
 
 Kicked off the CPU: The OS realizes the thread cannot do any more math/logic. It immediately forces a context switch, giving the CPU to another thread.
 
-The Wait Queue (0% CPU): The OS places the thread into a BLOCKED (or WAITING) state and parks it in a specific Wait Queue. During normal context switching, the OS completely ignores this thread. It consumes zero CPU cycles.
+The Learning.Wait Queue (0% CPU): The OS places the thread into a BLOCKED (or WAITING) state and parks it in a specific Learning.Wait Queue. During normal context switching, the OS completely ignores this thread. It consumes zero CPU cycles.
 
 Hardware Interrupt: When the user finally types and hits Enter, the keyboard sends a physical electrical signal (Hardware Interrupt) to the CPU.
 
-Waking Up: The OS sees the signal, grabs the data, wakes the thread up from the Wait Queue, and puts it back in the Ready Queue so it can resume executing on the CPU.
+Waking Up: The OS sees the signal, grabs the data, wakes the thread up from the Learning.Wait Queue, and puts it back in the Ready Queue so it can resume executing on the CPU.
 
 
 ### Thread Lifecycle
@@ -235,3 +235,24 @@ The `executor.awaitTermination(10, TimeUnit.SECONDS)` method pauses the current 
 **Important Rules**
 * **You MUST shutdown first:** You must call `executor.shutdown()` *before* calling `awaitTermination()`. If you do not shut down the executor first, the pool remains open to new tasks, and this method will simply wait until the timer runs out.
 * **Early Exit on Timeout:** If the time limit is reached and background tasks are still running, the method stops waiting and the `main` thread moves on to the next line of code. (Note: It does *not* automatically kill the running tasks when it gives up).
+
+## Concurrency Note: `synchronized (this)` vs. `synchronized (ClassName.class)`
+
+In Java, synchronization behavior depends entirely on which monitor lock is acquired:
+
+| Attribute | `synchronized (this)` | `synchronized (ClassName.class)` |
+| :--- | :--- | :--- |
+| **Lock Target** | Specific object instance | The JVM-wide `java.lang.Class` object |
+| **Lock Scope** | Object-level (one lock per instance) | Class-level (one lock per `ClassLoader`) |
+| **Equivalent To** | `public synchronized void method()` | `public static synchronized void method()` |
+| **Primary Purpose** | Guarding **instance variables** (`private int x;`) | Guarding **static variables** (`private static int x;`) |
+
+### Key Differences
+
+1. **Instance Isolation:**
+   ```java
+   Counter c1 = new Counter();
+   Counter c2 = new Counter();
+
+   // Thread A calls c1.increment(); -> Locks c1
+   // Thread B calls c2.increment(); -> Locks c2 (Runs concurrently, no blocking)

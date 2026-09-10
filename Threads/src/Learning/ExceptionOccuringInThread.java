@@ -1,3 +1,5 @@
+package Learning;
+
 public class ExceptionOccuringInThread {
     static class MyThread extends Thread{
         @Override

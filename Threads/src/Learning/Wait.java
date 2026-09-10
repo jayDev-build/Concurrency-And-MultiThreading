@@ -1,3 +1,5 @@
+package Learning;
+
 public class Wait {
     static class SharedResource extends Thread{
 

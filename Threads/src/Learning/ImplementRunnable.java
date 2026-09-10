@@ -1,7 +1,8 @@
-//Issue with extend Threads is that we can not extend to any other class
-//Since java do not support Multiple Inheritance
-public class ExtendThread {
-    static class ThreadClass extends Thread{
+package Learning;//This Runnable Implementation allows to extend also
+//But this increases the code overhead of creating runnable to pass in threads
+
+public class ImplementRunnable {
+    static class ThreadClassRunnable implements Runnable{
         @Override
         public void run(){
             for(int i = 0; i < 5; i++){
@@ -14,10 +15,11 @@ public class ExtendThread {
             }
         }
     }
-
     public static void main(String[] args) {
-        ThreadClass t1 = new ThreadClass();
-        ThreadClass t2 = new ThreadClass();
+        ThreadClassRunnable runnable = new ThreadClassRunnable();
+
+        Thread t1 = new Thread(runnable);
+        Thread t2 = new Thread(runnable);
 
         t1.start();
         t2.start();

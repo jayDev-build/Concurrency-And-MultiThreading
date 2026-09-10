@@ -1,8 +1,10 @@
+package Learning;
+
 public class Sleep {
     public static void main(String[] args) {
         System.out.println("Thread is going to sleep...");
         try {
-            Thread.sleep(2000); // Sleep for 2 seconds
+            Thread.sleep(2000); // Learning.Sleep for 2 seconds
         } catch (InterruptedException e) {
             e.printStackTrace();
         }

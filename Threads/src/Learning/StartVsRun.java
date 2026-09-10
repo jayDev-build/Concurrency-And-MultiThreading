@@ -1,3 +1,5 @@
+package Learning;
+
 public class StartVsRun {
     static class MyThread extends Thread{
 
